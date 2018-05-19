@@ -22,7 +22,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/apache/incubator-openwhisk-cli/wski18n"
+    "wski18n"
 	"github.com/apache/incubator-openwhisk-client-go/whisk"
 
 	"github.com/fatih/color"

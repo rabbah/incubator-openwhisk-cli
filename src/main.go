@@ -24,8 +24,8 @@ import (
 	"os"
 	"reflect"
 
-	"github.com/apache/incubator-openwhisk-cli/commands"
-	"github.com/apache/incubator-openwhisk-cli/wski18n"
+	"commands"
+	"wski18n"
 	"github.com/apache/incubator-openwhisk-client-go/whisk"
 	"github.com/mattn/go-colorable"
 )
