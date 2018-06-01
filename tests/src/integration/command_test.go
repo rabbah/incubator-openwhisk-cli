@@ -20,7 +20,7 @@
 package tests
 
 import (
-	"github.com/apache/incubator-openwhisk-cli/tests/src/integration/common"
+	"../common"
 	"github.com/stretchr/testify/assert"
 	"os"
 	"testing"

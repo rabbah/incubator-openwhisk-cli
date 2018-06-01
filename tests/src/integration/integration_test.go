@@ -21,7 +21,7 @@ package tests
 
 import (
 	"fmt"
-	"github.com/apache/incubator-openwhisk-cli/tests/src/integration/common"
+	"../common"
 	"github.com/stretchr/testify/assert"
 	"os"
 	"strings"
