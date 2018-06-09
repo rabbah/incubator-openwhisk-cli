@@ -291,8 +291,7 @@ class WskCliBasicUsageTests extends TestHelpers with WskTestHelpers {
     wskprops) { (wp, assetHelper) =>
     val name = "abort init"
     assetHelper.withCleaner(wsk.action, name) { (action, _) =>
-      action.create(name,
-                    Some(TestUtils.getTestActionFilename("initexit.js")))
+      action.create(name, Some(TestUtils.getTestActionFilename("initexit.js")))
     }
 
     withActivation(wsk.activation, wsk.action.invoke(name)) { activation =>
@@ -327,8 +326,7 @@ class WskCliBasicUsageTests extends TestHelpers with WskTestHelpers {
     wskprops) { (wp, assetHelper) =>
     val name = "abort run"
     assetHelper.withCleaner(wsk.action, name) { (action, _) =>
-      action.create(name,
-                    Some(TestUtils.getTestActionFilename("runexit.js")))
+      action.create(name, Some(TestUtils.getTestActionFilename("runexit.js")))
     }
 
     withActivation(wsk.activation, wsk.action.invoke(name)) { activation =>
@@ -392,15 +390,20 @@ class WskCliBasicUsageTests extends TestHelpers with WskTestHelpers {
       }
 
       withActivation(wsk.activation, wsk.action.invoke(name)) { activation =>
-        retry({
-          val cmd = Seq("activation", "logs", "--strip", activation.activationId)
-          val run = wsk.cli(cmd ++ wskprops.overrides ++ auth,
-                            expectedExitCode = SUCCESS_EXIT)
-          run.stdout should {
-            be("this is stdout\nthis is stderr\n") or
-              be("this is stderr\nthis is stdout\n")
-          }
-        }, 120, Some(1.second))
+        retry(
+          {
+            val cmd =
+              Seq("activation", "logs", "--strip", activation.activationId)
+            val run = wsk.cli(cmd ++ wskprops.overrides ++ auth,
+                              expectedExitCode = SUCCESS_EXIT)
+            run.stdout should {
+              be("this is stdout\nthis is stderr\n") or
+                be("this is stderr\nthis is stdout\n")
+            }
+          },
+          120,
+          Some(1.second)
+        )
       }
   }
 
@@ -529,8 +532,7 @@ class WskCliBasicUsageTests extends TestHelpers with WskTestHelpers {
         (action, _) =>
           action.create(
             name,
-            Some(
-              TestUtils.getTestActionFilename("helloOpenwhiskPackage.js")))
+            Some(TestUtils.getTestActionFilename("helloOpenwhiskPackage.js")))
       }
 
       val run = wsk.action
@@ -586,10 +588,9 @@ class WskCliBasicUsageTests extends TestHelpers with WskTestHelpers {
     wskprops) { (wp, assetHelper) =>
     val name = "deadline"
     assetHelper.withCleaner(wsk.action, name) { (action, _) =>
-      action.create(
-        name,
-        Some(TestUtils.getTestActionFilename("helloDeadline.js")),
-        timeout = Some(3 seconds))
+      action.create(name,
+                    Some(TestUtils.getTestActionFilename("helloDeadline.js")),
+                    timeout = Some(3 seconds))
     }
 
     val run = wsk.action.invoke(name)
@@ -609,10 +610,9 @@ class WskCliBasicUsageTests extends TestHelpers with WskTestHelpers {
     (wp, assetHelper) =>
       val name = "timeout"
       assetHelper.withCleaner(wsk.action, name) { (action, _) =>
-        action.create(
-          name,
-          Some(TestUtils.getTestActionFilename("helloDeadline.js")),
-          timeout = Some(3 seconds))
+        action.create(name,
+                      Some(TestUtils.getTestActionFilename("helloDeadline.js")),
+                      timeout = Some(3 seconds))
       }
 
       val start = Instant.now(Clock.systemUTC()).toEpochMilli

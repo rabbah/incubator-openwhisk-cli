@@ -357,9 +357,8 @@ class WskCliBasicTests extends TestHelpers with WskTestHelpers {
     }
 
     Seq(strErrInput, numErrInput, boolErrInput) foreach { input =>
-      getJSONFromResponse(
-        wsk.action.invoke(name, parameters = input, blocking = true, expectedExitCode = 246).stderr,
-        wsk.isInstanceOf[Wsk])
+      wsk
+        .parseJsonString(wsk.action.invoke(name, parameters = input, blocking = true, expectedExitCode = 246).stderr)
         .fields("response")
         .asJsObject
         .fields("result")
@@ -381,7 +380,7 @@ class WskCliBasicTests extends TestHelpers with WskTestHelpers {
       }
 
       val stderr = wsk.action.invoke(name, blocking = true, expectedExitCode = 246).stderr
-      ActivationResult.serdes.read(removeCLIHeader(stderr).parseJson).response.result shouldBe Some {
+      ActivationResult.serdes.read(wsk.parseJsonString(stderr)).response.result shouldBe Some {
         JsObject("error" -> JsObject("msg" -> "failed activation on purpose".toJson))
       }
   }
@@ -483,15 +482,19 @@ class WskCliBasicTests extends TestHelpers with WskTestHelpers {
     }
 
     val trigger = wsk.trigger.get(triggerName)
-    getJSONFromResponse(trigger.stdout, true).fields("parameters") shouldBe JsArray(JsObject("key" -> JsString("a"), "value" -> JsString("A")))
-    getJSONFromResponse(trigger.stdout, true).fields("publish") shouldBe false.toJson
-    getJSONFromResponse(trigger.stdout, true).fields("version") shouldBe "0.0.2".toJson
+    wsk.parseJsonString(trigger.stdout).fields("parameters") shouldBe JsArray(
+      JsObject("key" -> JsString("a"), "value" -> JsString("A")))
+    wsk.parseJsonString(trigger.stdout).fields("publish") shouldBe false.toJson
+    wsk.parseJsonString(trigger.stdout).fields("version") shouldBe "0.0.2".toJson
 
-    val expectedRules = JsObject(
-      ns + "/" + ruleName -> JsObject(
-        "action" -> JsObject("name" -> JsString(actionName), "path" -> JsString(ns)),
-        "status" -> JsString("active")))
-    getJSONFromResponse(trigger.stdout, true).fields("rules") shouldBe expectedRules
+    wsk
+      .parseJsonString(trigger.stdout)
+      .fields("rules") shouldBe {
+      JsObject(
+        ns + "/" + ruleName -> JsObject(
+          "action" -> JsObject("name" -> JsString(actionName), "path" -> JsString(ns)),
+          "status" -> JsString("active")))
+    }
 
     val dynamicParams = Map("t" -> "T".toJson)
     val run = wsk.trigger.fire(triggerName, dynamicParams)
@@ -537,7 +540,7 @@ class WskCliBasicTests extends TestHelpers with WskTestHelpers {
       trigger.create(name, annotations = annots)
     }
 
-    val result = getJSONFromResponse(wsk.trigger.get(name).stdout, true)
+    val result = wsk.parseJsonString(wsk.trigger.get(name).stdout)
     val ns = wsk.namespace.whois()
 
     result.fields("name") shouldBe name.toJson
@@ -614,10 +617,14 @@ class WskCliBasicTests extends TestHelpers with WskTestHelpers {
       wsk.trigger
         .get(triggerName, fieldFilter = Some("namespace"))
         .stdout should include regex (s"""(?i)$successMsg namespace\n"$ns"""")
-      wsk.trigger.get(triggerName, fieldFilter = Some("name")).stdout should include(s"""$successMsg name\n"$triggerName"""")
-      wsk.trigger.get(triggerName, fieldFilter = Some("version")).stdout should include(s"""$successMsg version\n"0.0.1"""")
-      wsk.trigger.get(triggerName, fieldFilter = Some("publish")).stdout should include(s"""$successMsg publish\nfalse""")
-      wsk.trigger.get(triggerName, fieldFilter = Some("annotations")).stdout should include(s"""$successMsg annotations\n[]""")
+      wsk.trigger.get(triggerName, fieldFilter = Some("name")).stdout should include(
+        s"""$successMsg name\n"$triggerName"""")
+      wsk.trigger.get(triggerName, fieldFilter = Some("version")).stdout should include(
+        s"""$successMsg version\n"0.0.1"""")
+      wsk.trigger.get(triggerName, fieldFilter = Some("publish")).stdout should include(
+        s"""$successMsg publish\nfalse""")
+      wsk.trigger.get(triggerName, fieldFilter = Some("annotations")).stdout should include(
+        s"""$successMsg annotations\n[]""")
       wsk.trigger
         .get(triggerName, fieldFilter = Some("parameters"))
         .stdout should include regex (s"""$successMsg parameters\n\\[\\s+\\{\\s+"key":\\s+"payload",\\s+"value":\\s+"test"\\s+\\}\\s+\\]""")
@@ -625,11 +632,13 @@ class WskCliBasicTests extends TestHelpers with WskTestHelpers {
       wsk.trigger.get(triggerName, fieldFilter = Some("invalid"), expectedExitCode = ERROR_EXIT).stderr should include(
         "error: Invalid field filter 'invalid'.")
 
-      val expectedRules = JsObject(
-        ns + "/" + ruleName -> JsObject(
-          "action" -> JsObject("name" -> JsString(actionName), "path" -> JsString(ns)),
-          "status" -> JsString("active")))
-      getJSONFromResponse(wsk.trigger.get(triggerName, fieldFilter = Some("rules")).stdout, isCli = true) shouldBe expectedRules
+      wsk
+        .parseJsonString(wsk.trigger.get(triggerName, fieldFilter = Some("rules")).stdout) shouldBe {
+        JsObject(
+          ns + "/" + ruleName -> JsObject(
+            "action" -> JsObject("name" -> JsString(actionName), "path" -> JsString(ns)),
+            "status" -> JsString("active")))
+      }
   }
 
   it should "create, and fire a trigger to ensure result is empty" in withAssetCleaner(wskprops) { (wp, assetHelper) =>
@@ -939,16 +948,16 @@ class WskCliBasicTests extends TestHelpers with WskTestHelpers {
     val run = wsk.trigger.fire(triggerName)
     withActivation(wsk.activation, run) { activation =>
       var result = wsk.activation.get(Some(activation.activationId))
-      getJSONFromResponse(result.stdout, true).fields("namespace").convertTo[String] shouldBe ns
-      getJSONFromResponse(result.stdout, true).fields("name").convertTo[String] shouldBe triggerName
-      getJSONFromResponse(result.stdout, true).fields("version").convertTo[String] shouldBe "0.0.1"
-      getJSONFromResponse(result.stdout, true).fields("publish") shouldBe false.toJson
-      getJSONFromResponse(result.stdout, true).fields("subject").convertTo[String].length should not be (0)
-      getJSONFromResponse(result.stdout, true).fields("activationId").convertTo[String] shouldBe activation.activationId
-      getJSONFromResponse(result.stdout, true).fields("start") should not be JsObject()
-      getJSONFromResponse(result.stdout, true).fields("end") shouldBe 0.toJson
-      getJSONFromResponse(result.stdout, true).fields("duration") shouldBe 0.toJson
-      getJSONFromResponse(result.stdout, true).fields("annotations").convertTo[JsArray].elements.length shouldBe 0
+      wsk.parseJsonString(result.stdout).fields("namespace").convertTo[String] shouldBe ns
+      wsk.parseJsonString(result.stdout).fields("name").convertTo[String] shouldBe triggerName
+      wsk.parseJsonString(result.stdout).fields("version").convertTo[String] shouldBe "0.0.1"
+      wsk.parseJsonString(result.stdout).fields("publish") shouldBe false.toJson
+      wsk.parseJsonString(result.stdout).fields("subject").convertTo[String].length should not be (0)
+      wsk.parseJsonString(result.stdout).fields("activationId").convertTo[String] shouldBe activation.activationId
+      wsk.parseJsonString(result.stdout).fields("start") should not be JsObject()
+      wsk.parseJsonString(result.stdout).fields("end") shouldBe 0.toJson
+      wsk.parseJsonString(result.stdout).fields("duration") shouldBe 0.toJson
+      wsk.parseJsonString(result.stdout).fields("annotations").convertTo[JsArray].elements.length shouldBe 0
     }
   }
 
