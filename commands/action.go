@@ -53,11 +53,13 @@ const (
 	SWIFT_EXT         = ".swift"
 	ZIP_EXT           = ".zip"
 	PHP_EXT           = ".php"
+	BAL_BIN_EXT       = ".balx"
 	NODE_JS           = "nodejs"
 	PYTHON            = "python"
 	JAVA              = "java"
 	SWIFT             = "swift"
 	PHP               = "php"
+	BAL               = "ballerina"
 	DEFAULT           = "default"
 	BLACKBOX          = "blackbox"
 	SEQUENCE          = "sequence"
@@ -593,7 +595,7 @@ func getExec(args []string, params ActionFlags) (*whisk.Exec, error) {
 			return nil, err
 		}
 
-		if ext == ZIP_EXT || ext == JAVA_EXT {
+		if ext == ZIP_EXT || ext == JAVA_EXT || ext == BAL_BIN_EXT {
 			code = base64.StdEncoding.EncodeToString([]byte(code))
 		}
 
@@ -623,6 +625,8 @@ func getExec(args []string, params ActionFlags) (*whisk.Exec, error) {
 		exec.Kind = fmt.Sprintf("%s:%s", JAVA, DEFAULT)
 	} else if ext == PHP_EXT {
 		exec.Kind = fmt.Sprintf("%s:%s", PHP, DEFAULT)
+	} else if ext == BAL_BIN_EXT {
+		exec.Kind = fmt.Sprintf("%s:%s", BAL, DEFAULT)
 	} else {
 		if ext == ZIP_EXT {
 			return nil, zipKindError()
